@@ -55,7 +55,7 @@ const App = () => {
   useEffect(() => {
     if (!isLoggedIn) return;
 
-    // Resetuj timer przy każdej aktywności użytkownika
+    // Resetuj timer przy kaĹĽdej aktywnoĹ›ci uĹĽytkownika
     const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
     
     const handleActivity = () => {
@@ -66,14 +66,14 @@ const App = () => {
       document.addEventListener(event, handleActivity);
     });
 
-    // Sprawdzaj co minutę, czy sesja nie wygasła
+    // Sprawdzaj co minutÄ™, czy sesja nie wygasĹ‚a
     const checkSession = setInterval(() => {
       const sessionExpiry = localStorage.getItem('sessionExpiry');
       if (!sessionExpiry || Date.now() >= parseInt(sessionExpiry)) {
-        alert('Sesja wygasła. Zostaniesz wylogowany.');
+        alert('Sesja wygasĹ‚a. Zostaniesz wylogowany.');
         handleLogout();
       }
-    }, 60000); // Sprawdzaj co minutę
+    }, 60000); // Sprawdzaj co minutÄ™
 
     return () => {
       activityEvents.forEach(event => {
@@ -92,7 +92,7 @@ const App = () => {
             <Route path="*" element={<LoginPage onLogin={handleLogin} />} />
           ) : (
             <>
-              <Route path="/" element={<Navigate to="/dodaj-osobe" />} />
+              <Route path="/" element={<Navigate to="/osoby" />} />
               <Route path="/dodaj-osobe" element={<AddOsobaPage />} />
               <Route path="/osoby" element={<OsobaListPage />} />
               <Route path="/edytuj-osobe/:id" element={<EditOsobaPage />} />
@@ -113,7 +113,7 @@ const App = () => {
             <Route path="/podglad-miejsce-pracy/:id" element={<PodgladMiejscaPracyPage />} />
             <Route path="/ustawienia-2fa" element={<TwoFactorPage />} />
             <Route path="/uzytkownicy" element={<UsersManagementPage />} />
-            <Route path="/login" element={<Navigate to="/dodaj-osobe" />} />
+            <Route path="/login" element={<Navigate to="/osoby" />} />
           </>
         )}
       </Routes>

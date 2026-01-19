@@ -26,8 +26,8 @@ namespace SzpitalnaKadra.Controllers
         {
             try
             {
-                // 1. Ustal ścieżki
-                // Zakładamy, że struktura to:
+                // 1. Ustal Äąâ€şcieÄąÄ˝ki
+                // ZakÄąâ€šadamy, ÄąÄ˝e struktura to:
                 // root/
                 //   szoi_scraper.py
                 //   SzpitalBackend/
@@ -35,9 +35,9 @@ namespace SzpitalnaKadra.Controllers
                 
                 string contentRootPath = _env.ContentRootPath; // SzpitalBackend folder
                 // Use robust relative pathing instead of GetParent
-                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
-                string scriptPath = Path.Combine(solutionRootPath, "szoi_scraper.py");
-                string jsonOutputPath = Path.Combine(solutionRootPath, "employees_import.json");
+                string solutionRootPath = contentRootPath; // W Docker wszystko jest w /app
+                string scriptPath = Path.Combine(contentRootPath, "szoi_scraper.py");
+                string jsonOutputPath = Path.Combine(contentRootPath, "employees_import.json");
 
                 // DEBUG: Check paths
                 if (!System.IO.File.Exists(scriptPath))
@@ -46,7 +46,7 @@ namespace SzpitalnaKadra.Controllers
                 }
 
                 // Determine Python interpreter
-                string pythonExe = "python";
+                string pythonExe = "python3";
                 string venvPython = Path.Combine(solutionRootPath, "venv", "Scripts", "python.exe");
                 if (System.IO.File.Exists(venvPython))
                 {
@@ -69,7 +69,7 @@ namespace SzpitalnaKadra.Controllers
                 {
                     if (process == null) return StatusCode(500, "Failed to start scraper process.");
                     
-                    // Opcjonalnie czytaj stdout/stderr do logów
+                    // Opcjonalnie czytaj stdout/stderr do logÄ‚Ĺ‚w
                     string stderr = await process.StandardError.ReadToEndAsync();
                     
                     await process.WaitForExitAsync();
@@ -90,8 +90,8 @@ namespace SzpitalnaKadra.Controllers
 
                 string jsonContent = await System.IO.File.ReadAllTextAsync(jsonOutputPath);
                 
-                // Konfiguracja do deserializacji snake_case -> PascalCase jeśli trzeba, 
-                // ale tu mamy niestandardowe mapowanie, więc użyjemy DTO.
+                // Konfiguracja do deserializacji snake_case -> PascalCase jeÄąâ€şli trzeba, 
+                // ale tu mamy niestandardowe mapowanie, wiĂ„â„˘c uÄąÄ˝yjemy DTO.
                 var options = new JsonSerializerOptions 
                 { 
                     PropertyNameCaseInsensitive = true,
@@ -384,20 +384,20 @@ namespace SzpitalnaKadra.Controllers
                     LANGUAGE plpgsql
                     AS $$
                     BEGIN
-                        -- Pomijamy walidację jeśli numer jest pusty/null
+                        -- Pomijamy walidacjĂ„â„˘ jeÄąâ€şli numer jest pusty/null
                         IF NEW.npwz_id_rizh IS NULL OR NEW.npwz_id_rizh = '' THEN
                             RETURN NEW;
                         END IF;
                         
-                        -- Sprawdź czy ostatni znak to litera (np. P dla pielęgniarek, A dla położnych)
+                        -- SprawdÄąĹź czy ostatni znak to litera (np. P dla pielĂ„â„˘gniarek, A dla poÄąâ€šoÄąÄ˝nych)
                         IF NEW.npwz_id_rizh ~ '[A-Za-z]$' THEN
-                            -- Dla pielęgniarek/położnych nie sprawdzamy cyfry kontrolnej
+                            -- Dla pielĂ„â„˘gniarek/poÄąâ€šoÄąÄ˝nych nie sprawdzamy cyfry kontrolnej
                             RETURN NEW;
                         END IF;
                         
-                        -- Dla lekarzy sprawdzamy standardową walidację
+                        -- Dla lekarzy sprawdzamy standardowĂ„â€¦ walidacjĂ„â„˘
                         IF NOT sprawdz_pwz_pojedynczy(NEW.npwz_id_rizh) THEN
-                            RAISE EXCEPTION 'P0001: Nieprawidłowy numer PWZ: %. Cyfra kontrolna nie zgadza się.', NEW.npwz_id_rizh;
+                            RAISE EXCEPTION 'P0001: NieprawidÄąâ€šowy numer PWZ: %. Cyfra kontrolna nie zgadza siĂ„â„˘.', NEW.npwz_id_rizh;
                         END IF;
                         
                         RETURN NEW;
@@ -406,11 +406,11 @@ namespace SzpitalnaKadra.Controllers
                 ";
                 
                 await _context.Database.ExecuteSqlRawAsync(sql);
-                return Ok(new { message = "Trigger walidacji PWZ został zaktualizowany. Teraz numery pielęgniarek/położnych nie są walidowane." });
+                return Ok(new { message = "Trigger walidacji PWZ zostaÄąâ€š zaktualizowany. Teraz numery pielĂ„â„˘gniarek/poÄąâ€šoÄąÄ˝nych nie sĂ„â€¦ walidowane." });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Błąd: {ex.Message}");
+                return StatusCode(500, $"BÄąâ€šĂ„â€¦d: {ex.Message}");
             }
         }
 
@@ -420,7 +420,7 @@ namespace SzpitalnaKadra.Controllers
             try
             {
                 string contentRootPath = _env.ContentRootPath;
-                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
+                string solutionRootPath = contentRootPath; // W Docker wszystko jest w /app
                 string reportsDir = Path.Combine(solutionRootPath, "import_reports");
 
                 if (!Directory.Exists(reportsDir))
@@ -431,7 +431,7 @@ namespace SzpitalnaKadra.Controllers
                 var reports = new List<ImportReportSummary>();
                 var files = Directory.GetFiles(reportsDir, "report_*.json")
                     .OrderByDescending(f => f)
-                    .Take(20); // Ostatnie 20 raportów
+                    .Take(20); // Ostatnie 20 raportÄ‚Ĺ‚w
 
                 foreach (var file in files)
                 {
@@ -465,7 +465,7 @@ namespace SzpitalnaKadra.Controllers
             try
             {
                 string contentRootPath = _env.ContentRootPath;
-                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
+                string solutionRootPath = contentRootPath; // W Docker wszystko jest w /app
                 string reportsDir = Path.Combine(solutionRootPath, "import_reports");
 
                 if (!Directory.Exists(reportsDir))
@@ -498,12 +498,12 @@ namespace SzpitalnaKadra.Controllers
             try
             {
                 string contentRootPath = _env.ContentRootPath;
-                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
+                string solutionRootPath = contentRootPath; // W Docker wszystko jest w /app
                 string settingsPath = Path.Combine(solutionRootPath, "szoi_settings.json");
 
                 if (!System.IO.File.Exists(settingsPath))
                 {
-                    // Zwróć domyślne ustawienia
+                    // ZwrÄ‚Ĺ‚Ă„â€ˇ domyÄąâ€şlne ustawienia
                     return Ok(new SzoiSettingsDto());
                 }
 
@@ -523,7 +523,7 @@ namespace SzpitalnaKadra.Controllers
             try
             {
                 string contentRootPath = _env.ContentRootPath;
-                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
+                string solutionRootPath = contentRootPath; // W Docker wszystko jest w /app
                 string settingsPath = Path.Combine(solutionRootPath, "szoi_settings.json");
                 string scraperPath = Path.Combine(solutionRootPath, "szoi_scraper.py");
 
@@ -554,7 +554,7 @@ namespace SzpitalnaKadra.Controllers
                     await System.IO.File.WriteAllTextAsync(scraperPath, scriptContent);
                 }
 
-                return Ok(new { message = "Ustawienia zostały zapisane." });
+                return Ok(new { message = "Ustawienia zostaÄąâ€šy zapisane." });
             }
             catch (Exception ex)
             {
@@ -566,7 +566,7 @@ namespace SzpitalnaKadra.Controllers
         {
             if (string.IsNullOrEmpty(pesel) || pesel.Length != 11) return 1; // Default male? or unknown
             int digit = int.Parse(pesel[9].ToString());
-            return (digit % 2 == 0) ? 2 : 1; // 0,2,4,6,8 -> K (2), 1,3,5,7,9 -> M (1) (Założenie ID płci: 1-M, 2-K)
+            return (digit % 2 == 0) ? 2 : 1; // 0,2,4,6,8 -> K (2), 1,3,5,7,9 -> M (1) (ZaÄąâ€šoÄąÄ˝enie ID pÄąâ€šci: 1-M, 2-K)
         }
 
         private DateTime? ParsePeselDate(string pesel)
@@ -667,7 +667,7 @@ namespace SzpitalnaKadra.Controllers
             [JsonPropertyName("dyplom")] public string? Dyplom { get; set; }
         }
 
-        // Klasy raportów
+        // Klasy raportÄ‚Ĺ‚w
         public class PersonReportItem
         {
             public int Id { get; set; }

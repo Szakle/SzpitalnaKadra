@@ -1,50 +1,52 @@
-# Szpitalna Kadra - Deployment
+# Szpitalna Kadra - Deploy
 
 ## Wymagania
 - Docker i Docker Compose
 
-## Szybki start
-
-```bash
-docker-compose up -d --build
-```
-
-Aplikacja bedzie dostepna pod:
-- Frontend: http://localhost:7700
-- Backend API: http://localhost:7701
-- Baza danych: localhost:7702
-
 ## Konfiguracja
+Edytuj plik `.env` przed uruchomieniem:
 
-Edytuj plik `.env` aby zmienic:
-- Porty (FRONTEND_PORT, BACKEND_PORT, DB_PORT)
-- Dane bazy (POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD)
+```env
+FRONTEND_PORT=7700
+BACKEND_PORT=7701
+DB_PORT=7702
+POSTGRES_USER=szpitalna_kadra_user
+POSTGRES_PASSWORD=your_secure_password
+POSTGRES_DB=szpitalna_kadra_db
+```
 
-## Komendy
+## Uruchomienie
 
-### Uruchomienie
 ```bash
 docker-compose up -d --build
 ```
 
-### Zatrzymanie
+## Dostęp
+- Frontend: http://localhost:7700
+- Backend API: http://localhost:7701/api
+
+## Przywracanie bazy danych
+Backup znajduje się w `backup/backup.backup`. Aby przywrócić:
+
+```bash
+docker exec -i szpitalna-kadra-db pg_restore -U szpitalna_kadra_user -d szpitalna_kadra_db < backup/backup.backup
+```
+
+## Zatrzymanie
+
 ```bash
 docker-compose down
 ```
 
-### Reset bazy (usuwa wszystkie dane!)
-```bash
-docker-compose down -v
-docker-compose up -d --build
-```
+## Funkcje
+- Zarządzanie personelem medycznym
+- Import danych z SZOI (scraper)
+- Dwuskładnikowe uwierzytelnianie (2FA)
+- Zarządzanie użytkownikami
 
-### Logi
-```bash
-docker-compose logs -f
-```
-
-## Uzytkownicy domyslni
-- admin
-- test
-- czytelnik
-- dodawacz
+## Porty
+| Usługa   | Port |
+|----------|------|
+| Frontend | 7700 |
+| Backend  | 7701 |
+| Database | 7702 |
