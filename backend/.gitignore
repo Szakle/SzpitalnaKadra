@@ -1,0 +1,60 @@
+﻿# ---- Build & Output ----
+bin/
+obj/
+out/
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+*.exe
+*.dll
+*.pdb
+*.log
+*.cache
+*.tmp
+*.db
+*.db-shm
+*.db-wal
+*.mdf
+*.ldf
+
+# ---- Visual Studio / JetBrains / Rider ----
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+*.userosscache
+*.sln.docstates
+
+# ---- Dependency / NuGet ----
+*.nupkg
+*.snupkg
+*.nuspec
+packages/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+
+# ---- OS / Environment ----
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+*.swp
+*.bak
+
+# ---- Publish / Temp ----
+publish/
+tmp/
+temp/
+logs/
+coverage/
+TestResults/
+
+# ---- Frontend / Node ----
+node_modules/
+dist/
+.env
+.env.local
