@@ -1,4 +1,4 @@
-﻿FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY *.csproj ./
 RUN dotnet restore
@@ -7,13 +7,17 @@ RUN dotnet publish -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 
-# Instalacja Python i Chrome dla scrapera
+# Instalacja Python, Chrome i narzedzi sieciowych dla scrapera
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     wget \
     gnupg \
     unzip \
+    curl \
+    iputils-ping \
+    dnsutils \
+    ca-certificates \
     && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \

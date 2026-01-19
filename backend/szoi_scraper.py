@@ -32,7 +32,7 @@ SZOI_PASSWORD = os.environ.get("SZOI_PASSWORD", "Wazniak777!")
 # Auto-detect Docker environment
 IS_DOCKER = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER', False)
 HEADLESS = IS_DOCKER or os.environ.get("HEADLESS", "false").lower() == "true"
-LIMIT_EMPLOYEES: Optional[int] = 20  # np. 20 do testow, None = wszyscy
+LIMIT_EMPLOYEES = 20  # type: Optional[int]  # np. 20 do testow, None = wszyscy
 
 MAX_SCROLL_PASSES = 80
 PESEL_RE = re.compile(r"\b\d{11}\b")
