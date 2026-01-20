@@ -21,36 +21,49 @@ namespace SzpitalnaKadra.Controllers
             _env = env;
         }
 
+        // Helper to get root path - different for Docker vs local
+        private string GetRootPath()
+        {
+            string contentRootPath = _env.ContentRootPath;
+            bool isDocker = System.IO.File.Exists("/.dockerenv") || contentRootPath == "/app";
+            return isDocker ? "/app" : Path.GetFullPath(Path.Combine(contentRootPath, ".."));
+        }
+
         [HttpPost("run")]
         public async Task<IActionResult> RunScraper()
         {
             try
             {
-                // 1. Ustal ścieżki
-                // Zakładamy, że struktura to:
-                // root/
-                //   szoi_scraper.py
-                //   SzpitalBackend/
-                //   ...
+                // 1. Ustal ścieżki - różne dla Docker i lokalnego środowiska
+                string contentRootPath = _env.ContentRootPath;
                 
-                string contentRootPath = _env.ContentRootPath; // SzpitalBackend folder
-                // Use robust relative pathing instead of GetParent
-                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
-                string scriptPath = Path.Combine(solutionRootPath, "szoi_scraper.py");
-                string jsonOutputPath = Path.Combine(solutionRootPath, "employees_import.json");
+                // Detect Docker environment
+                bool isDocker = System.IO.File.Exists("/.dockerenv") || contentRootPath == "/app";
+                
+                string rootPath;
+                string pythonExe;
+                
+                if (isDocker)
+                {
+                    // W Dockerze wszystko jest w /app
+                    rootPath = "/app";
+                    pythonExe = "python3";
+                }
+                else
+                {
+                    // Lokalnie - struktura: root/SzpitalBackend/, root/szoi_scraper.py
+                    rootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
+                    string venvPython = Path.Combine(rootPath, "venv", "Scripts", "python.exe");
+                    pythonExe = System.IO.File.Exists(venvPython) ? venvPython : "python";
+                }
+                
+                string scriptPath = Path.Combine(rootPath, "szoi_scraper.py");
+                string jsonOutputPath = Path.Combine(rootPath, "employees_import.json");
 
                 // DEBUG: Check paths
                 if (!System.IO.File.Exists(scriptPath))
                 {
-                    return StatusCode(500, $"FATAL: Script file not found at: {scriptPath}. ContentRoot: {contentRootPath}");
-                }
-
-                // Determine Python interpreter
-                string pythonExe = "python";
-                string venvPython = Path.Combine(solutionRootPath, "venv", "Scripts", "python.exe");
-                if (System.IO.File.Exists(venvPython))
-                {
-                    pythonExe = venvPython;
+                    return StatusCode(500, $"FATAL: Script file not found at: {scriptPath}. ContentRoot: {contentRootPath}. IsDocker: {isDocker}");
                 }
 
                 // 2. Uruchom skrypt Python
@@ -62,7 +75,7 @@ namespace SzpitalnaKadra.Controllers
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true,
-                    WorkingDirectory = solutionRootPath // Pli json powstanie w root
+                    WorkingDirectory = rootPath
                 };
 
                 using (var process = Process.Start(startInfo))
@@ -357,7 +370,7 @@ namespace SzpitalnaKadra.Controllers
                 };
 
                 // Zapisz raport do pliku historii
-                string reportsDir = Path.Combine(solutionRootPath, "import_reports");
+                string reportsDir = Path.Combine(rootPath, "import_reports");
                 Directory.CreateDirectory(reportsDir);
                 string reportFileName = $"report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
                 string reportPath = Path.Combine(reportsDir, reportFileName);
@@ -419,9 +432,7 @@ namespace SzpitalnaKadra.Controllers
         {
             try
             {
-                string contentRootPath = _env.ContentRootPath;
-                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
-                string reportsDir = Path.Combine(solutionRootPath, "import_reports");
+                string reportsDir = Path.Combine(GetRootPath(), "import_reports");
 
                 if (!Directory.Exists(reportsDir))
                 {
@@ -464,9 +475,7 @@ namespace SzpitalnaKadra.Controllers
         {
             try
             {
-                string contentRootPath = _env.ContentRootPath;
-                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
-                string reportsDir = Path.Combine(solutionRootPath, "import_reports");
+                string reportsDir = Path.Combine(GetRootPath(), "import_reports");
 
                 if (!Directory.Exists(reportsDir))
                 {
@@ -497,10 +506,9 @@ namespace SzpitalnaKadra.Controllers
         {
             try
             {
-                string contentRootPath = _env.ContentRootPath;
-                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
-                string settingsPath = Path.Combine(solutionRootPath, "szoi_settings.json");
-                string scraperPath = Path.Combine(solutionRootPath, "szoi_scraper.py");
+                string rootPath = GetRootPath();
+                string settingsPath = Path.Combine(rootPath, "szoi_settings.json");
+                string scraperPath = Path.Combine(rootPath, "szoi_scraper.py");
 
                 var settings = new SzoiSettingsDto();
 
@@ -569,10 +577,9 @@ namespace SzpitalnaKadra.Controllers
         {
             try
             {
-                string contentRootPath = _env.ContentRootPath;
-                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
-                string settingsPath = Path.Combine(solutionRootPath, "szoi_settings.json");
-                string scraperPath = Path.Combine(solutionRootPath, "szoi_scraper.py");
+                string rootPath = GetRootPath();
+                string settingsPath = Path.Combine(rootPath, "szoi_settings.json");
+                string scraperPath = Path.Combine(rootPath, "szoi_scraper.py");
 
                 // Encrypt password before saving
                 var settingsToSave = new SzoiSettingsDto
