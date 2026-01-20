@@ -272,14 +272,21 @@ const Navbar = ({ onLogout }: NavbarProps) => {
           <span 
             title={`Wersja: ${APP_VERSION}`}
             style={{
-              fontSize: '14px',
+              fontSize: '12px',
               color: '#6c757d',
               marginLeft: '8px',
               cursor: 'help',
-              alignSelf: 'center'
+              alignSelf: 'center',
+              border: '1px solid #6c757d',
+              borderRadius: '50%',
+              width: '18px',
+              height: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
           >
-            ⓘ
+            i
           </span>
         </div>
       </nav>
