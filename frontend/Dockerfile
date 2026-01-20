@@ -11,6 +11,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Generate build timestamp (append on new line)
+RUN echo "" >> .env.production && echo "REACT_APP_BUILD_VERSION=$(date '+%d.%m.%Y, %H:%M')" >> .env.production
+
 # Build the app (uses .env.production automatically)
 RUN npm run build
 

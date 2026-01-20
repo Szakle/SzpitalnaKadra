@@ -1,4 +1,4 @@
-import os
+﻿import os
 import re
 import json
 import time
@@ -100,6 +100,15 @@ def norm(s: Optional[str]) -> Optional[str]:
         return None
     s = re.sub(r"\s+", " ", s).strip()
     return None if s in ("-", "-") else s
+
+
+def get_val(d: dict, key: str) -> Optional[str]:
+    """Szuka wartości w dict po znormalizowanym kluczu (bez polskich znaków)"""
+    key_norm = _norm_key(key)
+    for k, v in d.items():
+        if _norm_key(k) == key_norm:
+            return v
+    return None
 
 
 def extract_after(label: str, text: str) -> Optional[str]:
@@ -288,21 +297,21 @@ def parse_osoba_and_zatrudnienie(html: str):
             lv[k] = v
 
     osoba = {
-        "pesel": lv.get("PESEL"),
-        "imie": lv.get("Imie"),
-        "imie2": norm(lv.get("Drugie imie")),
-        "nazwisko": lv.get("Nazwisko"),
-        "numer_telefonu": norm(lv.get("Numer telefonu")),
-        "data_zgonu": norm(lv.get("Data zgonu")),
+        "pesel": get_val(lv, "PESEL"),
+        "imie": get_val(lv, "Imie"),
+        "imie2": norm(get_val(lv, "Drugie imie")),
+        "nazwisko": get_val(lv, "Nazwisko"),
+        "numer_telefonu": norm(get_val(lv, "Numer telefonu")),
+        "data_zgonu": norm(get_val(lv, "Data zgonu")),
         "nr_pwz": None,
         "typ_personelu_id": None
     }
 
     zatrudnienie = {
-        "zatrudnienie_deklaracja": lv.get("Zatrudnienie/deklaracja zatrudnienia"),
-        "zatrudniony_od": lv.get("Zatrudniony od"),
-        "zatrudniony_do": None if lv.get("Zatrudniony do") == "BEZTERMINOWO" else lv.get("Zatrudniony do"),
-        "srednioczasowy_czas_pracy": lv.get("Sr. miesieczny czas pracy godziny/minuty")
+        "zatrudnienie_deklaracja": get_val(lv, "Zatrudnienie/deklaracja zatrudnienia"),
+        "zatrudniony_od": get_val(lv, "Zatrudniony od"),
+        "zatrudniony_do": None if get_val(lv, "Zatrudniony do") == "BEZTERMINOWO" else get_val(lv, "Zatrudniony do"),
+        "srednioczasowy_czas_pracy": get_val(lv, "Sr. miesieczny czas pracy godziny/minuty")
     }
 
     return osoba, zatrudnienie

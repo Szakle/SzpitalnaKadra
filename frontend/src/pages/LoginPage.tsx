@@ -49,13 +49,8 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
           localStorage.setItem('userRole', res.data.role);
         }
         onLogin();
-        // Przekieruj w zależności od roli
-        const role = res.data.role || 'admin';
-        if (role === 'reader') {
-          navigate('/osoby');
-        } else {
-          navigate('/dodaj-osobe');
-        }
+        // Zawsze przekieruj do listy osób
+        navigate('/osoby');
       }
     } catch (err: any) {
       console.error(err);

@@ -26,9 +26,14 @@ const Navbar = ({ onLogout }: NavbarProps) => {
   const [szoiSettings, setSzoiSettings] = useState<SzoiSettings>({
     szoiUrl: 'https://szoi-test.nfz-lublin.pl',
     recordLimit: 20,
-    fetchAll: false
+    fetchAll: false,
+    szoiLogin: '',
+    szoiPassword: ''
   });
   const [szoiLoading, setSzoiLoading] = useState(false);
+  
+  // App version - auto-generated during Docker build
+  const APP_VERSION = process.env.REACT_APP_BUILD_VERSION || 'dev';
   
   // Pobierz rolę użytkownika
   const userRole = localStorage.getItem('userRole') || 'admin';
@@ -264,6 +269,18 @@ const Navbar = ({ onLogout }: NavbarProps) => {
           >
             Wyloguj
           </button>
+          <span 
+            title={`Wersja: ${APP_VERSION}`}
+            style={{
+              fontSize: '14px',
+              color: '#6c757d',
+              marginLeft: '8px',
+              cursor: 'help',
+              alignSelf: 'center'
+            }}
+          >
+            ⓘ
+          </span>
         </div>
       </nav>
 
@@ -481,6 +498,49 @@ const Navbar = ({ onLogout }: NavbarProps) => {
                 }}
                 placeholder="https://szoi-test.nfz-lublin.pl"
               />
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                Login SZOI:
+              </label>
+              <input
+                type="text"
+                value={szoiSettings.szoiLogin || ''}
+                onChange={(e) => setSzoiSettings({ ...szoiSettings, szoiLogin: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+                placeholder="Wpisz login do SZOI"
+              />
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                Hasło SZOI:
+              </label>
+              <input
+                type="password"
+                value={szoiSettings.szoiPassword === '********' ? '' : (szoiSettings.szoiPassword || '')}
+                onChange={(e) => setSzoiSettings({ ...szoiSettings, szoiPassword: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+                placeholder={szoiSettings.szoiPassword === '********' ? '••••••••' : 'Wpisz hasło do SZOI'}
+              />
+              {szoiSettings.szoiPassword === '********' && (
+                <small style={{ color: '#666', fontSize: '12px' }}>Hasło jest już ustawione. Zostaw puste aby nie zmieniać.</small>
+              )}
             </div>
 
             <div style={{ marginBottom: '1.5rem' }}>

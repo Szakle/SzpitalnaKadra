@@ -26,8 +26,8 @@ namespace SzpitalnaKadra.Controllers
         {
             try
             {
-                // 1. Ustal Äąâ€şcieÄąÄ˝ki
-                // ZakÄąâ€šadamy, ÄąÄ˝e struktura to:
+                // 1. Ustal ścieżki
+                // Zakładamy, że struktura to:
                 // root/
                 //   szoi_scraper.py
                 //   SzpitalBackend/
@@ -35,9 +35,9 @@ namespace SzpitalnaKadra.Controllers
                 
                 string contentRootPath = _env.ContentRootPath; // SzpitalBackend folder
                 // Use robust relative pathing instead of GetParent
-                string solutionRootPath = contentRootPath; // W Docker wszystko jest w /app
-                string scriptPath = Path.Combine(contentRootPath, "szoi_scraper.py");
-                string jsonOutputPath = Path.Combine(contentRootPath, "employees_import.json");
+                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
+                string scriptPath = Path.Combine(solutionRootPath, "szoi_scraper.py");
+                string jsonOutputPath = Path.Combine(solutionRootPath, "employees_import.json");
 
                 // DEBUG: Check paths
                 if (!System.IO.File.Exists(scriptPath))
@@ -46,7 +46,7 @@ namespace SzpitalnaKadra.Controllers
                 }
 
                 // Determine Python interpreter
-                string pythonExe = "python3";
+                string pythonExe = "python";
                 string venvPython = Path.Combine(solutionRootPath, "venv", "Scripts", "python.exe");
                 if (System.IO.File.Exists(venvPython))
                 {
@@ -69,7 +69,7 @@ namespace SzpitalnaKadra.Controllers
                 {
                     if (process == null) return StatusCode(500, "Failed to start scraper process.");
                     
-                    // Opcjonalnie czytaj stdout/stderr do logÄ‚Ĺ‚w
+                    // Opcjonalnie czytaj stdout/stderr do logów
                     string stderr = await process.StandardError.ReadToEndAsync();
                     
                     await process.WaitForExitAsync();
@@ -90,8 +90,8 @@ namespace SzpitalnaKadra.Controllers
 
                 string jsonContent = await System.IO.File.ReadAllTextAsync(jsonOutputPath);
                 
-                // Konfiguracja do deserializacji snake_case -> PascalCase jeÄąâ€şli trzeba, 
-                // ale tu mamy niestandardowe mapowanie, wiĂ„â„˘c uÄąÄ˝yjemy DTO.
+                // Konfiguracja do deserializacji snake_case -> PascalCase jeśli trzeba, 
+                // ale tu mamy niestandardowe mapowanie, więc użyjemy DTO.
                 var options = new JsonSerializerOptions 
                 { 
                     PropertyNameCaseInsensitive = true,
@@ -384,20 +384,20 @@ namespace SzpitalnaKadra.Controllers
                     LANGUAGE plpgsql
                     AS $$
                     BEGIN
-                        -- Pomijamy walidacjĂ„â„˘ jeÄąâ€şli numer jest pusty/null
+                        -- Pomijamy walidację jeśli numer jest pusty/null
                         IF NEW.npwz_id_rizh IS NULL OR NEW.npwz_id_rizh = '' THEN
                             RETURN NEW;
                         END IF;
                         
-                        -- SprawdÄąĹź czy ostatni znak to litera (np. P dla pielĂ„â„˘gniarek, A dla poÄąâ€šoÄąÄ˝nych)
+                        -- Sprawdź czy ostatni znak to litera (np. P dla pielęgniarek, A dla położnych)
                         IF NEW.npwz_id_rizh ~ '[A-Za-z]$' THEN
-                            -- Dla pielĂ„â„˘gniarek/poÄąâ€šoÄąÄ˝nych nie sprawdzamy cyfry kontrolnej
+                            -- Dla pielęgniarek/położnych nie sprawdzamy cyfry kontrolnej
                             RETURN NEW;
                         END IF;
                         
-                        -- Dla lekarzy sprawdzamy standardowĂ„â€¦ walidacjĂ„â„˘
+                        -- Dla lekarzy sprawdzamy standardową walidację
                         IF NOT sprawdz_pwz_pojedynczy(NEW.npwz_id_rizh) THEN
-                            RAISE EXCEPTION 'P0001: NieprawidÄąâ€šowy numer PWZ: %. Cyfra kontrolna nie zgadza siĂ„â„˘.', NEW.npwz_id_rizh;
+                            RAISE EXCEPTION 'P0001: Nieprawidłowy numer PWZ: %. Cyfra kontrolna nie zgadza się.', NEW.npwz_id_rizh;
                         END IF;
                         
                         RETURN NEW;
@@ -406,11 +406,11 @@ namespace SzpitalnaKadra.Controllers
                 ";
                 
                 await _context.Database.ExecuteSqlRawAsync(sql);
-                return Ok(new { message = "Trigger walidacji PWZ zostaÄąâ€š zaktualizowany. Teraz numery pielĂ„â„˘gniarek/poÄąâ€šoÄąÄ˝nych nie sĂ„â€¦ walidowane." });
+                return Ok(new { message = "Trigger walidacji PWZ został zaktualizowany. Teraz numery pielęgniarek/położnych nie są walidowane." });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"BÄąâ€šĂ„â€¦d: {ex.Message}");
+                return StatusCode(500, $"Błąd: {ex.Message}");
             }
         }
 
@@ -420,7 +420,7 @@ namespace SzpitalnaKadra.Controllers
             try
             {
                 string contentRootPath = _env.ContentRootPath;
-                string solutionRootPath = contentRootPath; // W Docker wszystko jest w /app
+                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
                 string reportsDir = Path.Combine(solutionRootPath, "import_reports");
 
                 if (!Directory.Exists(reportsDir))
@@ -431,7 +431,7 @@ namespace SzpitalnaKadra.Controllers
                 var reports = new List<ImportReportSummary>();
                 var files = Directory.GetFiles(reportsDir, "report_*.json")
                     .OrderByDescending(f => f)
-                    .Take(20); // Ostatnie 20 raportÄ‚Ĺ‚w
+                    .Take(20); // Ostatnie 20 raportów
 
                 foreach (var file in files)
                 {
@@ -465,7 +465,7 @@ namespace SzpitalnaKadra.Controllers
             try
             {
                 string contentRootPath = _env.ContentRootPath;
-                string solutionRootPath = contentRootPath; // W Docker wszystko jest w /app
+                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
                 string reportsDir = Path.Combine(solutionRootPath, "import_reports");
 
                 if (!Directory.Exists(reportsDir))
@@ -498,18 +498,65 @@ namespace SzpitalnaKadra.Controllers
             try
             {
                 string contentRootPath = _env.ContentRootPath;
-                string solutionRootPath = contentRootPath; // W Docker wszystko jest w /app
+                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
                 string settingsPath = Path.Combine(solutionRootPath, "szoi_settings.json");
+                string scraperPath = Path.Combine(solutionRootPath, "szoi_scraper.py");
 
-                if (!System.IO.File.Exists(settingsPath))
+                var settings = new SzoiSettingsDto();
+
+                // First try to read from JSON
+                if (System.IO.File.Exists(settingsPath))
                 {
-                    // ZwrÄ‚Ĺ‚Ă„â€ˇ domyÄąâ€şlne ustawienia
-                    return Ok(new SzoiSettingsDto());
+                    var json = await System.IO.File.ReadAllTextAsync(settingsPath);
+                    settings = JsonSerializer.Deserialize<SzoiSettingsDto>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new SzoiSettingsDto();
                 }
 
-                var json = await System.IO.File.ReadAllTextAsync(settingsPath);
-                var settings = JsonSerializer.Deserialize<SzoiSettingsDto>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                return Ok(settings ?? new SzoiSettingsDto());
+                // Read current values from Python script
+                if (System.IO.File.Exists(scraperPath))
+                {
+                    var scriptContent = await System.IO.File.ReadAllTextAsync(scraperPath);
+                    
+                    // Extract BASE_URL
+                    var baseUrlMatch = System.Text.RegularExpressions.Regex.Match(scriptContent, @"BASE_URL\s*=\s*""([^""]+)""");
+                    if (baseUrlMatch.Success)
+                    {
+                        settings.SzoiUrl = baseUrlMatch.Groups[1].Value;
+                    }
+
+                    // Extract SZOI_LOGIN default value
+                    var loginMatch = System.Text.RegularExpressions.Regex.Match(scriptContent, @"SZOI_LOGIN\s*=\s*os\.environ\.get\([^,]+,\s*""([^""]+)""\)");
+                    if (loginMatch.Success && string.IsNullOrEmpty(settings.SzoiLogin))
+                    {
+                        settings.SzoiLogin = loginMatch.Groups[1].Value;
+                    }
+
+                    // Extract SZOI_PASSWORD default value
+                    var passwordMatch = System.Text.RegularExpressions.Regex.Match(scriptContent, @"SZOI_PASSWORD\s*=\s*os\.environ\.get\([^,]+,\s*""([^""]+)""\)");
+                    if (passwordMatch.Success)
+                    {
+                        // Password exists in script - indicate it's set
+                        settings.SzoiPassword = "********";
+                    }
+
+                    // Extract LIMIT_EMPLOYEES
+                    var limitMatch = System.Text.RegularExpressions.Regex.Match(scriptContent, @"LIMIT_EMPLOYEES\s*=\s*(\d+|None)");
+                    if (limitMatch.Success)
+                    {
+                        var limitValue = limitMatch.Groups[1].Value;
+                        if (limitValue == "None")
+                        {
+                            settings.FetchAll = true;
+                            settings.RecordLimit = null;
+                        }
+                        else
+                        {
+                            settings.FetchAll = false;
+                            settings.RecordLimit = int.Parse(limitValue);
+                        }
+                    }
+                }
+                
+                return Ok(settings);
             }
             catch (Exception ex)
             {
@@ -523,12 +570,24 @@ namespace SzpitalnaKadra.Controllers
             try
             {
                 string contentRootPath = _env.ContentRootPath;
-                string solutionRootPath = contentRootPath; // W Docker wszystko jest w /app
+                string solutionRootPath = Path.GetFullPath(Path.Combine(contentRootPath, ".."));
                 string settingsPath = Path.Combine(solutionRootPath, "szoi_settings.json");
                 string scraperPath = Path.Combine(solutionRootPath, "szoi_scraper.py");
 
+                // Encrypt password before saving
+                var settingsToSave = new SzoiSettingsDto
+                {
+                    SzoiUrl = settings.SzoiUrl,
+                    RecordLimit = settings.RecordLimit,
+                    FetchAll = settings.FetchAll,
+                    SzoiLogin = settings.SzoiLogin,
+                    SzoiPassword = !string.IsNullOrEmpty(settings.SzoiPassword) 
+                        ? EncryptionHelper.Encrypt(settings.SzoiPassword) 
+                        : null
+                };
+
                 // Zapisz ustawienia do JSON
-                var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+                var json = JsonSerializer.Serialize(settingsToSave, new JsonSerializerOptions { WriteIndented = true });
                 await System.IO.File.WriteAllTextAsync(settingsPath, json);
 
                 // Zaktualizuj skrypt Python
@@ -547,14 +606,32 @@ namespace SzpitalnaKadra.Controllers
                     string limitValue = settings.FetchAll ? "None" : (settings.RecordLimit?.ToString() ?? "20");
                     scriptContent = System.Text.RegularExpressions.Regex.Replace(
                         scriptContent,
-                        @"LIMIT_EMPLOYEES[^=]*=\s*\S+",
-                        $"LIMIT_EMPLOYEES: Optional[int] = {limitValue}"
+                        @"LIMIT_EMPLOYEES\s*=\s*[^\n#]+",
+                        $"LIMIT_EMPLOYEES = {limitValue}  # type: Optional[int]"
                     );
+
+                    // Zaktualizuj SZOI_LOGIN i SZOI_PASSWORD
+                    if (!string.IsNullOrEmpty(settings.SzoiLogin))
+                    {
+                        scriptContent = System.Text.RegularExpressions.Regex.Replace(
+                            scriptContent,
+                            @"SZOI_LOGIN\s*=\s*os\.environ\.get\([^)]+\)",
+                            $"SZOI_LOGIN = os.environ.get(\"SZOI_LOGIN\", \"{settings.SzoiLogin}\")"
+                        );
+                    }
+                    if (!string.IsNullOrEmpty(settings.SzoiPassword))
+                    {
+                        scriptContent = System.Text.RegularExpressions.Regex.Replace(
+                            scriptContent,
+                            @"SZOI_PASSWORD\s*=\s*os\.environ\.get\([^)]+\)",
+                            $"SZOI_PASSWORD = os.environ.get(\"SZOI_PASSWORD\", \"{settings.SzoiPassword}\")"
+                        );
+                    }
 
                     await System.IO.File.WriteAllTextAsync(scraperPath, scriptContent);
                 }
 
-                return Ok(new { message = "Ustawienia zostaÄąâ€šy zapisane." });
+                return Ok(new { message = "Ustawienia zostały zapisane." });
             }
             catch (Exception ex)
             {
@@ -566,7 +643,7 @@ namespace SzpitalnaKadra.Controllers
         {
             if (string.IsNullOrEmpty(pesel) || pesel.Length != 11) return 1; // Default male? or unknown
             int digit = int.Parse(pesel[9].ToString());
-            return (digit % 2 == 0) ? 2 : 1; // 0,2,4,6,8 -> K (2), 1,3,5,7,9 -> M (1) (ZaÄąâ€šoÄąÄ˝enie ID pÄąâ€šci: 1-M, 2-K)
+            return (digit % 2 == 0) ? 2 : 1; // 0,2,4,6,8 -> K (2), 1,3,5,7,9 -> M (1) (Założenie ID płci: 1-M, 2-K)
         }
 
         private DateTime? ParsePeselDate(string pesel)
@@ -667,7 +744,7 @@ namespace SzpitalnaKadra.Controllers
             [JsonPropertyName("dyplom")] public string? Dyplom { get; set; }
         }
 
-        // Klasy raportÄ‚Ĺ‚w
+        // Klasy raportów
         public class PersonReportItem
         {
             public int Id { get; set; }
@@ -714,6 +791,49 @@ namespace SzpitalnaKadra.Controllers
             public string SzoiUrl { get; set; } = "https://szoi-test.nfz-lublin.pl";
             public int? RecordLimit { get; set; } = 20;
             public bool FetchAll { get; set; } = false;
+            public string? SzoiLogin { get; set; }
+            public string? SzoiPassword { get; set; } // Encrypted with AES
+        }
+
+        // Simple AES encryption helper
+        private static class EncryptionHelper
+        {
+            private static readonly string Key = "SzpitalnaKadra2026SecretKey12345"; // 32 bytes for AES-256
+
+            public static string Encrypt(string plainText)
+            {
+                if (string.IsNullOrEmpty(plainText)) return "";
+                using var aes = System.Security.Cryptography.Aes.Create();
+                aes.Key = System.Text.Encoding.UTF8.GetBytes(Key);
+                aes.GenerateIV();
+                using var encryptor = aes.CreateEncryptor();
+                var plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+                var cipherBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
+                var result = new byte[aes.IV.Length + cipherBytes.Length];
+                aes.IV.CopyTo(result, 0);
+                cipherBytes.CopyTo(result, aes.IV.Length);
+                return Convert.ToBase64String(result);
+            }
+
+            public static string Decrypt(string cipherText)
+            {
+                if (string.IsNullOrEmpty(cipherText)) return "";
+                try
+                {
+                    var fullCipher = Convert.FromBase64String(cipherText);
+                    using var aes = System.Security.Cryptography.Aes.Create();
+                    aes.Key = System.Text.Encoding.UTF8.GetBytes(Key);
+                    var iv = new byte[16];
+                    var cipher = new byte[fullCipher.Length - 16];
+                    Array.Copy(fullCipher, iv, 16);
+                    Array.Copy(fullCipher, 16, cipher, 0, cipher.Length);
+                    aes.IV = iv;
+                    using var decryptor = aes.CreateDecryptor();
+                    var plainBytes = decryptor.TransformFinalBlock(cipher, 0, cipher.Length);
+                    return System.Text.Encoding.UTF8.GetString(plainBytes);
+                }
+                catch { return ""; }
+            }
         }
     }
 }

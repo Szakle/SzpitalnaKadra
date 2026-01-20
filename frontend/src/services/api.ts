@@ -93,6 +93,8 @@ export interface SzoiSettings {
   szoiUrl: string;
   recordLimit: number | null;
   fetchAll: boolean;
+  szoiLogin?: string;
+  szoiPassword?: string;
 }
 
 export const getSzoiSettings = async (): Promise<SzoiSettings> => {
